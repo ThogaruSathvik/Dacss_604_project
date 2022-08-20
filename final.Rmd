@@ -1,0 +1,55 @@
+---
+title: "Cleaning Meltwater Explore Data"
+output: html_document
+date: "2022-08-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Loading required packages
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+
+data <- read_csv("data3.csv")
+
+
+data <- data %>% 
+  filter(Source %in% c("facebook", "twitter", "instagram", "youtube", "reddit", "Tiktok"))
+
+data <- data %>% 
+  mutate(Date = as.POSIXct(Date, format="%d-%m-%Y %H:%M",tz=Sys.timezone()),
+         year = year(Date),
+         month = month(Date, label = TRUE),
+         month_day = mday(Date),
+         week_day = wday(Date, label = TRUE),
+         hour = hour(Date),
+         Country = toupper(Country)) 
+
+data <- data[!(is.na(data$Influencer) & (is.na(data$`Twitter id`))), ]
+data <- data%>%
+  mutate(Influencer= ifelse(is.na(Influencer),`Twitter id`,Influencer))
+
+
+#country codes to country names
+Country_code_data <- read.csv("world_country_and_usa_states_latitude_and_longitude_values.csv") %>% select(c(1:4))
+
+#language codes to language names
+language_code <- read_csv("language-codes.csv")
+
+data <- merge(data, Country_code_data, by.x = "Country" , by.y = "country_code", all.x = TRUE)
+
+data <- merge(data, language_code,by.x = "Language", by.y = "alpha2", all.x = TRUE )
+data <- data %>% select(-c(Language, Country)) %>% rename(Language = English)
+
+write.csv(data, "cleaned_.csv")
+
+```
+
